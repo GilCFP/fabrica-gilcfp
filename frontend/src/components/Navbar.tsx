@@ -1,4 +1,3 @@
-import { useState } from 'react'
 import { NavLink, useLocation } from 'react-router'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
@@ -21,10 +20,13 @@ const navItems = [
   { path: '/config', label: 'Config', icon: Key },
 ]
 
-export default function Navbar() {
-  const [collapsed, setCollapsed] = useState(false)
-  const location = useLocation()
+interface NavbarProps {
+  collapsed: boolean
+  onToggle: () => void
+}
 
+export default function Navbar({ collapsed, onToggle }: NavbarProps) {
+  const location = useLocation()
   const sidebarWidth = collapsed ? 'w-[72px]' : 'w-[240px]'
 
   return (
@@ -35,7 +37,7 @@ export default function Navbar() {
         style={{ transitionTimingFunction: 'cubic-bezier(0.16, 1, 0.3, 1)' }}
       >
         {/* Logo Area */}
-        <div className="h-16 flex items-center justify-center border-b border-[#27272A] px-4">
+        <div className="h-16 flex items-center justify-center border-b border-[#27272A] px-4 overflow-hidden">
           <AnimatePresence mode="wait">
             {!collapsed ? (
               <motion.div
@@ -47,7 +49,7 @@ export default function Navbar() {
                 className="flex items-center gap-2"
               >
                 <div className="w-2 h-2 rounded-full bg-[#7C3AED]" />
-                <span className="font-semibold text-base text-white tracking-tight">
+                <span className="font-semibold text-base text-white tracking-tight whitespace-nowrap">
                   Fábrica GilCFP
                 </span>
               </motion.div>
@@ -65,7 +67,7 @@ export default function Navbar() {
         </div>
 
         {/* Nav Items */}
-        <nav className="flex-1 px-3 py-4 space-y-1">
+        <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto overflow-x-hidden">
           {navItems.map((item) => {
             const Icon = item.icon
             const isActive = location.pathname === item.path
@@ -111,7 +113,7 @@ export default function Navbar() {
         {/* Collapse Toggle */}
         <div className="p-3 border-t border-[#27272A]">
           <button
-            onClick={() => setCollapsed(!collapsed)}
+            onClick={onToggle}
             className="flex items-center justify-center gap-2 h-10 w-full rounded-lg text-[#71717A] hover:bg-[#262626] hover:text-white transition-all duration-150"
           >
             {collapsed ? <ChevronsRight size={20} /> : <ChevronsLeft size={20} />}
@@ -122,7 +124,7 @@ export default function Navbar() {
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
                   transition={{ duration: 0.2 }}
-                  className="text-sm"
+                  className="text-sm whitespace-nowrap"
                 >
                   Recolher
                 </motion.span>
@@ -142,7 +144,7 @@ export default function Navbar() {
               <NavLink
                 key={item.path}
                 to={item.path}
-                className={`flex flex-col items-center gap-1 px-3 py-1 rounded-lg transition-all duration-150 ${
+                className={`flex flex-col items-center gap-1 px-3 py-1 rounded-lg transition-all duration-150 relative ${
                   isActive
                     ? 'text-[#7C3AED]'
                     : 'text-[#71717A]'
