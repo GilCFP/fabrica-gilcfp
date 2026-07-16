@@ -1,6 +1,7 @@
 """Fábrica GilCFP — Main FastAPI application.
 Serves both API and React frontend static files."""
 import os
+from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
@@ -9,6 +10,9 @@ from contextlib import asynccontextmanager
 from database import engine, Base
 from routers import trends, scripts, videos, calendar, config
 from init_db import seed_scripts
+
+
+load_dotenv()
 
 
 @asynccontextmanager
@@ -53,11 +57,16 @@ def health_check():
         },
     }
 
+STATIC_DIR = os.path.join(os.path.dirname(__file__), "")
+
+
 @app.get("/")
 def root():
+    index_path = os.path.join(STATIC_DIR, "index.html")
+    if os.path.exists(index_path):
+        return FileResponse(index_path)
     return {"message": "Fábrica GilCFP API", "docs": "/docs"}
 
-STATIC_DIR = os.path.join(os.path.dirname(__file__), "")
 
 @app.get("/{full_path:path}")
 async def serve_frontend(full_path: str):

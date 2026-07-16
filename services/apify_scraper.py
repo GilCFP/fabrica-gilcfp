@@ -1,10 +1,8 @@
 """Apify integration for scraping US content sources."""
+import json
 import os
 import httpx
 from typing import List, Dict
-
-APIFY_API_TOKEN = os.environ.get("APIFY_API_TOKEN", "")
-OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY", "")
 
 DEFAULT_TRENDS = [
     {"title": "Claude Code: Vibe Coding para Devs que querem 10x produtividade", "source": "youtube", "channel": "Alex Finn", "url": "https://www.youtube.com/@AlexFinnOfficial", "summary": "Tutorial completo de como usar Claude Code para escrever código sem digitar.", "brazil_adaptation": "Mostrar como devs brasileiros podem usar Claude Code para acelerar entregas.", "adaptation_angle": "PM + Dev: como Claude Code me ajuda a entregar sozinho", "suggested_format": "Reel 60s com tela compartilhada", "priority_score": 95},
@@ -19,13 +17,14 @@ DEFAULT_TRENDS = [
 
 
 async def scrape_with_apify(query: str = "AI tools automation 2025") -> List[Dict]:
-    if not APIFY_API_TOKEN:
+    apify_token = os.environ.get("APIFY_API_TOKEN", "")
+    if not apify_token:
         return DEFAULT_TRENDS
     try:
         async with httpx.AsyncClient(timeout=60.0) as client:
             response = await client.post(
                 "https://api.apify.com/v2/acts/apify~google-search-scraper/runs",
-                headers={"Authorization": f"Bearer {APIFY_API_TOKEN}"},
+                headers={"Authorization": f"Bearer {apify_token}"},
                 json={"queries": ["best AI tools 2025 productivity", "Claude Code vibe coding tutorial", "n8n AI automation workflow", "Cursor IDE AI coding"], "maxPagesPerQuery": 1, "resultsPerPage": 10},
             )
             response.raise_for_status()
@@ -34,11 +33,11 @@ async def scrape_with_apify(query: str = "AI tools automation 2025") -> List[Dic
             import asyncio
             for _ in range(30):
                 await asyncio.sleep(2)
-                status_resp = await client.get(f"https://api.apify.com/v2/actor-runs/{run_id}", headers={"Authorization": f"Bearer {APIFY_API_TOKEN}"})
+                status_resp = await client.get(f"https://api.apify.com/v2/actor-runs/{run_id}", headers={"Authorization": f"Bearer {apify_token}"})
                 status = status_resp.json()["data"]["status"]
                 if status in ["SUCCEEDED", "FAILED", "TIMED-OUT"]:
                     break
-            dataset_resp = await client.get(f"https://api.apify.com/v2/actor-runs/{run_id}/dataset/items", headers={"Authorization": f"Bearer {APIFY_API_TOKEN}"})
+            dataset_resp = await client.get(f"https://api.apify.com/v2/actor-runs/{run_id}/dataset/items", headers={"Authorization": f"Bearer {apify_token}"})
             items = dataset_resp.json()
             trends = []
             for item in items[:10]:
@@ -50,7 +49,8 @@ async def scrape_with_apify(query: str = "AI tools automation 2025") -> List[Dic
 
 
 async def enrich_with_ai(trends: List[Dict]) -> List[Dict]:
-    if not OPENAI_API_KEY:
+    openai_key = os.environ.get("OPENAI_API_KEY", "")
+    if not openai_key:
         return trends
     try:
         async with httpx.AsyncClient(timeout=30.0) as client:
@@ -67,7 +67,7 @@ Contexto do criador: Gilberto de Carvalho, 23 anos, PM e Dev Full-Stack. Trabalh
 Gere em JSON: {{"adaptation_angle": "ângulo pro conteúdo dele (1 frase)", "brazil_adaptation": "como adaptar pro público brasileiro (2-3 frases)", "suggested_format": "formato ideal (Reel 30s, Reel 60s, Carrossel, Thread)"}}"""
                 response = await client.post(
                     "https://api.openai.com/v1/chat/completions",
-                    headers={"Authorization": f"Bearer {OPENAI_API_KEY}", "Content-Type": "application/json"},
+                    headers={"Authorization": f"Bearer {openai_key}", "Content-Type": "application/json"},
                     json={"model": "gpt-4o-mini", "messages": [{"role": "user", "content": prompt}], "temperature": 0.7, "response_format": {"type": "json_object"}},
                 )
                 if response.status_code == 200:

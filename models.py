@@ -22,6 +22,14 @@ class Script(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
     times_copied = Column(Integer, default=0)
 
+    # Rastreabilidade da fonte viral
+    trend_id = Column(Integer, nullable=True)
+    angle_index = Column(Integer, nullable=True)
+    source_url = Column(String(500), default="")
+    source_platform = Column(String(50), default="")
+    generation_mode = Column(String(50), default="manual")
+    status = Column(String(50), default="draft")
+
 
 class Trend(Base):
     __tablename__ = "trends"
@@ -38,6 +46,16 @@ class Trend(Base):
     is_new = Column(Integer, default=1)
     scraped_at = Column(DateTime, default=datetime.utcnow)
 
+    # Campos novos para discovery de conteúdo viral
+    external_id = Column(String(200), default="")
+    platform = Column(String(50), default="")
+    raw_metadata = Column(JSON, default=dict)
+    engagement_score = Column(Float, default=0)
+    content_age_hours = Column(Integer, default=0)
+    transcript_summary = Column(Text, default="")
+    angles_generated = Column(JSON, default=list)
+    used_in_script_id = Column(Integer, nullable=True)
+
 
 class Video(Base):
     __tablename__ = "videos"
@@ -51,8 +69,15 @@ class Video(Base):
     srt_content = Column(Text, default="")
     settings = Column(JSON, default=dict)
     error_message = Column(String(500), default="")
+    script_id = Column(Integer, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     completed_at = Column(DateTime, nullable=True)
+
+    # Edição externalizada (OpusClip)
+    editor_type = Column(String(50), default="local")
+    opusclip_job_id = Column(String(200), default="")
+    opusclip_status = Column(String(50), default="")
+    opusclip_result_url = Column(String(500), default="")
 
 
 class CalendarEvent(Base):
@@ -64,5 +89,7 @@ class CalendarEvent(Base):
     platform = Column(String(50), default="instagram")
     status = Column(String(50), default="draft")
     script_id = Column(Integer, nullable=True)
+    video_id = Column(Integer, nullable=True)
+    processed_at = Column(DateTime, nullable=True)
     notes = Column(Text, default="")
     created_at = Column(DateTime, default=datetime.utcnow)

@@ -24,6 +24,15 @@ frontend/node_modules/
 frontend/dist/
 frontend/.vite/
 node_modules/
+
+# Frontend build copied to root for static serving (see docs/setup.md)
+/index.html
+/assets/
+
+# TypeScript build artifacts
+*.tsbuildinfo
+*.config.d.ts
+*.config.js
 package-lock.json
 yarn.lock
 pnpm-lock.yaml

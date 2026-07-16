@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: fabrica-gilcfp
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    envVars:
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: APIFY_API_TOKEN
+        sync: false
+      - key: DATABASE_URL
+        value: sqlite:///./gilcfp.db

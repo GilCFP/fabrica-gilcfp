@@ -1,0 +1,18 @@
+version: "3.9"
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: fabrica-gilcfp
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    volumes:
+      # Persiste banco, uploads e vídeos processados fora do container
+      - ./gilcfp.db:/app/gilcfp.db
+      - ./uploads:/app/uploads
+      - ./outputs:/app/outputs
+    restart: unless-stopped

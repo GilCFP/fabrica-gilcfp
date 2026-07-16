@@ -4,3 +4,5 @@ sqlalchemy
 pydantic
 httpx
 python-multipart
+python-dotenv
+youtube-transcript-api

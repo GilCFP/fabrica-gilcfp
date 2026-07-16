@@ -18,6 +18,7 @@ import {
   Trash2,
   Send,
   Loader2,
+  Play,
 } from 'lucide-react'
 import { fetchCalendar, createCalendarEvent, type CalendarEvent as ApiCalendarEvent } from '../api/client'
 
@@ -32,6 +33,7 @@ interface CalendarEvent {
   format: 'Reel' | 'Carrossel' | 'Thread'
   status: 'scheduled' | 'draft' | 'published'
   scriptRef?: string
+  videoId?: number
 }
 
 /* ─── Map API event to display event ─── */
@@ -52,6 +54,7 @@ function mapEvent(e: ApiCalendarEvent): CalendarEvent {
     format: (e.format as 'Reel' | 'Carrossel' | 'Thread') || 'Reel',
     status: (e.status as 'scheduled' | 'draft' | 'published') || 'scheduled',
     scriptRef: e.scriptRef,
+    videoId: e.video_id,
   }
 }
 
@@ -434,6 +437,11 @@ function DayCell({ day, events, isToday, onEventClick, onAddClick }: {
                 <Linkedin size={8} className="text-[#71717A]" />
               )}
               <span className="text-[8px] text-[#71717A]">{event.platform}</span>
+              {event.videoId && (
+                <span className="ml-auto flex items-center gap-0.5 text-[8px] text-[#10B981]">
+                  <Play size={8} fill="#10B981" /> video
+                </span>
+              )}
             </div>
           </button>
         ))}

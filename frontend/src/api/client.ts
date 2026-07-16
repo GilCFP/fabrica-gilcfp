@@ -87,6 +87,12 @@ export interface VideoHistoryItem {
   error?: string
 }
 
+export interface ScheduleVideoPayload {
+  event_date: string
+  platform: 'instagram' | 'linkedin'
+  content_format: 'reel_30' | 'reel_60' | 'carrossel'
+}
+
 export async function uploadVideo(file: File, settings: object) {
   const formData = new FormData()
   formData.append('file', file)
@@ -112,9 +118,12 @@ export async function getVideoStatus(id: number) {
     created_at: string
   }
 
-  // Map backend status to frontend pipeline steps
+  // Map backend status to frontend pipeline steps.
+  // 'uploaded' is the pre-processing state; 'processing' is honest and shows
+  // step 0 as current with a low, fixed progress until the backend completes.
   const stepOrder = ['transcription', 'cuts', 'jumpcuts', 'subtitles', 'export']
-  const statusIndex = data.status === 'completed' ? 5 : data.status === 'uploaded' ? 0 : 0
+  const statusIndex =
+    data.status === 'completed' ? 5 : data.status === 'uploaded' ? 0 : 0
 
   const steps = stepOrder.map((id, i) => {
     if (i < statusIndex) return { id, name: id, status: 'completed' as const }
@@ -122,15 +131,42 @@ export async function getVideoStatus(id: number) {
     return { id, name: id, status: 'pending' as const }
   })
 
+  const progress =
+    data.status === 'completed'
+      ? 100
+      : data.status === 'uploaded'
+        ? 5
+        : data.status === 'processing'
+          ? 15
+          : 0
+
   return {
     status: data.status,
-    progress: data.status === 'completed' ? 100 : data.status === 'uploaded' ? 5 : 50,
+    progress,
     steps,
   }
 }
 
 export function downloadVideo(id: number) {
   return `/api/videos/${id}/download`
+}
+
+export function previewVideo(id: number) {
+  return `/api/videos/${id}/preview`
+}
+
+export async function scheduleVideo(id: number, data: ScheduleVideoPayload) {
+  return apiFetch(`/api/videos/${id}/schedule`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  }) as Promise<{ id: number; message: string; video_id: number }>
+}
+
+export async function attachVideoToEvent(eventId: number, videoId: number) {
+  return apiFetch(`/api/calendar/${eventId}/attach-video/${videoId}`, {
+    method: 'POST',
+  }) as Promise<{ message: string; event_id: number; video_id: number }>
 }
 
 export async function listVideos() {
@@ -169,6 +205,7 @@ export interface CalendarEvent {
   format: string
   status: string
   scriptRef?: string
+  video_id?: number
 }
 
 export async function fetchCalendar(month: number, year: number) {
@@ -181,6 +218,8 @@ export async function fetchCalendar(month: number, year: number) {
       platform: string
       status: string
       script_id: number | null
+      video_id: number | null
+      processed_at: string | null
       notes: string
     }>
     summary: object
@@ -194,6 +233,7 @@ export async function fetchCalendar(month: number, year: number) {
     format: e.content_format,
     status: e.status,
     scriptRef: e.notes || undefined,
+    video_id: e.video_id || undefined,
   }))
 
   return { events, summary: data.summary }

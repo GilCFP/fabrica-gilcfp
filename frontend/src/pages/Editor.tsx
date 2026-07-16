@@ -23,8 +23,10 @@ import {
   AlertCircle,
   RefreshCw,
   History,
+  Calendar,
+  X,
 } from 'lucide-react'
-import { uploadVideo, getVideoStatus, downloadVideo, listVideos, type VideoHistoryItem } from '../api/client'
+import { uploadVideo, getVideoStatus, downloadVideo, previewVideo, scheduleVideo, listVideos, type VideoHistoryItem, type ScheduleVideoPayload } from '../api/client'
 
 const easeSmooth = [0.16, 1, 0.3, 1] as [number, number, number, number]
 
@@ -135,6 +137,150 @@ function StepNode({ step, index }: { step: PipelineStep; index: number }) {
   )
 }
 
+/* ─── Schedule Modal ─── */
+function ScheduleModal({
+  date,
+  platform,
+  format,
+  scheduling,
+  error,
+  onDateChange,
+  onPlatformChange,
+  onFormatChange,
+  onClose,
+  onConfirm,
+}: {
+  date: string
+  platform: 'instagram' | 'linkedin'
+  format: 'reel_30' | 'reel_60' | 'carrossel'
+  scheduling: boolean
+  error: string | null
+  onDateChange: (v: string) => void
+  onPlatformChange: (v: 'instagram' | 'linkedin') => void
+  onFormatChange: (v: 'reel_30' | 'reel_60' | 'carrossel') => void
+  onClose: () => void
+  onConfirm: () => void
+}) {
+  const platforms: { key: 'instagram' | 'linkedin'; label: string }[] = [
+    { key: 'instagram', label: 'Instagram' },
+    { key: 'linkedin', label: 'LinkedIn' },
+  ]
+  const formats: { key: 'reel_30' | 'reel_60' | 'carrossel'; label: string }[] = [
+    { key: 'reel_30', label: 'Reel 30s' },
+    { key: 'reel_60', label: 'Reel 60s' },
+    { key: 'carrossel', label: 'Carrossel' },
+  ]
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 z-50 flex items-center justify-center"
+      onClick={onClose}
+    >
+      <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
+      <motion.div
+        initial={{ scale: 0.95, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        exit={{ scale: 0.95, opacity: 0 }}
+        transition={{ duration: 0.3, ease: easeSmooth }}
+        className="relative w-full max-w-[420px] bg-[#1A1A1A] border border-[#27272A] rounded-2xl overflow-hidden"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="px-6 py-5 border-b border-[#27272A] flex items-center justify-between">
+          <h2 className="text-xl font-semibold text-white">Agendar no Calendario</h2>
+          <button
+            onClick={onClose}
+            className="w-8 h-8 rounded-lg bg-[#262626] flex items-center justify-center text-[#A1A1AA] hover:text-white transition-colors"
+          >
+            <X size={16} />
+          </button>
+        </div>
+
+        {/* Body */}
+        <div className="px-6 py-6 space-y-5">
+          {/* Date */}
+          <div>
+            <label className="text-xs text-[#71717A] block mb-1.5">Data</label>
+            <input
+              type="date"
+              value={date}
+              onChange={(e) => onDateChange(e.target.value)}
+              className="w-full h-10 px-3 bg-[#262626] border border-[#27272A] rounded-lg text-sm text-white focus:outline-none focus:border-[#7C3AED]"
+            />
+          </div>
+
+          {/* Platform */}
+          <div>
+            <label className="text-xs text-[#71717A] block mb-2">Plataforma</label>
+            <div className="flex gap-2">
+              {platforms.map((p) => (
+                <button
+                  key={p.key}
+                  onClick={() => onPlatformChange(p.key)}
+                  className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-xs font-medium border transition-all ${
+                    platform === p.key
+                      ? 'bg-[rgba(124,58,237,0.15)] border-[#7C3AED] text-white'
+                      : 'bg-[#262626] border-[#27272A] text-[#A1A1AA] hover:text-white'
+                  }`}
+                >
+                  {p.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Format */}
+          <div>
+            <label className="text-xs text-[#71717A] block mb-2">Formato</label>
+            <div className="flex gap-2">
+              {formats.map((f) => (
+                <button
+                  key={f.key}
+                  onClick={() => onFormatChange(f.key)}
+                  className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-xs font-medium border transition-all ${
+                    format === f.key
+                      ? 'bg-[rgba(6,182,212,0.15)] border-[#06B6D4] text-white'
+                      : 'bg-[#262626] border-[#27272A] text-[#A1A1AA] hover:text-white'
+                  }`}
+                >
+                  {f.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {error && (
+            <div className="p-3 bg-[rgba(239,68,68,0.1)] border border-[#EF4444] rounded-lg text-xs text-[#EF4444]">
+              {error}
+            </div>
+          )}
+        </div>
+
+        {/* Footer */}
+        <div className="px-6 py-4 border-t border-[#27272A] flex gap-2">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 bg-[#262626] border border-[#27272A] rounded-lg text-sm text-[#A1A1AA] hover:text-white transition-colors"
+          >
+            Cancelar
+          </button>
+          <button
+            onClick={onConfirm}
+            disabled={scheduling || !date}
+            className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-[#7C3AED] text-white rounded-lg text-sm font-medium hover:brightness-110 transition-all disabled:opacity-50"
+          >
+            {scheduling ? <Loader2 size={16} className="animate-spin" /> : <Calendar size={16} />}
+            {scheduling ? 'Agendando...' : 'Agendar'}
+          </button>
+        </div>
+      </motion.div>
+    </motion.div>
+  )
+}
+
 /* ─── Main Page ─── */
 export default function Editor() {
   const [file, setFile] = useState<{ name: string; size: string; duration: string } | null>(null)
@@ -153,11 +299,20 @@ export default function Editor() {
   const [jumpCuts, setJumpCuts] = useState(true)
   const [autoSubtitles, setAutoSubtitles] = useState(true)
   const [language, setLanguage] = useState('pt-BR')
-  const [subtitleStyle, setSubtitleStyle] = useState('tiktok')
+  const [subtitleStyle, setSubtitleStyle] = useState('hormozi')
 
   // Player
   const [playing, setPlaying] = useState(false)
   const [progress, setProgress] = useState(65)
+  const [videoUrl, setVideoUrl] = useState<string | null>(null)
+
+  // Schedule modal
+  const [showScheduleModal, setShowScheduleModal] = useState(false)
+  const [scheduleDate, setScheduleDate] = useState('')
+  const [schedulePlatform, setSchedulePlatform] = useState<'instagram' | 'linkedin'>('instagram')
+  const [scheduleFormat, setScheduleFormat] = useState<'reel_30' | 'reel_60' | 'carrossel'>('reel_30')
+  const [scheduling, setScheduling] = useState(false)
+  const [scheduleError, setScheduleError] = useState<string | null>(null)
 
   // History
   const [historyData, setHistoryData] = useState<VideoHistoryItem[]>([])
@@ -165,6 +320,19 @@ export default function Editor() {
 
   // Poll interval ref
   const pollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
+
+  // Keep the video player source in sync with the processing lifecycle.
+  useEffect(() => {
+    if (!processingVideo) {
+      setVideoUrl(null)
+      return
+    }
+    if (completed) {
+      setVideoUrl(downloadVideo(processingVideo.id))
+    } else {
+      setVideoUrl(previewVideo(processingVideo.id))
+    }
+  }, [processingVideo, completed])
 
   // Load video history
   const loadHistory = useCallback(async () => {
@@ -349,6 +517,26 @@ export default function Editor() {
       fileInputRef.current.value = ''
     }
   }, [])
+
+  const handleSchedule = useCallback(async () => {
+    if (!processingVideo || !scheduleDate) return
+    setScheduling(true)
+    setScheduleError(null)
+    try {
+      const payload: ScheduleVideoPayload = {
+        event_date: new Date(scheduleDate).toISOString(),
+        platform: schedulePlatform,
+        content_format: scheduleFormat,
+      }
+      await scheduleVideo(processingVideo.id, payload)
+      setShowScheduleModal(false)
+    } catch (err: any) {
+      console.error('Schedule error:', err)
+      setScheduleError(err.message || 'Erro ao agendar no calendario.')
+    } finally {
+      setScheduling(false)
+    }
+  }, [processingVideo, scheduleDate, schedulePlatform, scheduleFormat])
 
   const currentStepIndex = processingVideo?.steps.findIndex((s) => s.status === 'current') ?? -1
 
@@ -598,6 +786,7 @@ export default function Editor() {
                       onChange={(e) => setSubtitleStyle(e.target.value)}
                       className="w-full h-9 px-3 bg-[#262626] border border-[#27272A] rounded-lg text-sm text-white focus:outline-none focus:border-[#7C3AED]"
                     >
+                      <option value="hormozi">Hormozi (destaque palavras-chave)</option>
                       <option value="tiktok">TikTok Style</option>
                       <option value="youtube">YouTube Style</option>
                       <option value="minimalista">Minimalista</option>
@@ -610,40 +799,38 @@ export default function Editor() {
               {/* Preview Player */}
               <div className="bg-[#1A1A1A] border border-[#27272A] rounded-xl overflow-hidden">
                 <div className="aspect-video bg-black relative flex items-center justify-center">
-                  {processingVideo && !completed ? (
-                    <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center">
-                      <Loader2 size={32} className="text-[#06B6D4] animate-spin" />
-                      <p className="text-sm text-white mt-3">
-                        Processando...
-                      </p>
-                      <p className="text-xs text-[#71717A] mt-1">
-                        {processingVideo.progress > 0 ? `${processingVideo.progress}%` : 'Aguardando...'}
-                      </p>
-                    </div>
-                  ) : completed ? (
-                    <div className="text-center">
-                      <CheckCircle size={48} className="text-[#10B981] mx-auto" />
-                      <p className="text-sm text-white mt-3">Video processado!</p>
-                    </div>
+                  {videoUrl ? (
+                    <video
+                      src={videoUrl}
+                      controls
+                      className="w-full h-full object-contain"
+                      key={videoUrl}
+                    />
                   ) : (
                     <div className="text-center">
                       <FileVideo size={48} className="text-[#333333] mx-auto" />
                       <p className="text-sm text-[#52525B] mt-2">Previa do video</p>
                     </div>
                   )}
+                  {processingVideo && !completed && (
+                    <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center pointer-events-none">
+                      <Loader2 size={32} className="text-[#06B6D4] animate-spin" />
+                      <p className="text-sm text-white mt-3">Processando...</p>
+                      <p className="text-xs text-[#71717A] mt-1">
+                        {processingVideo.progress > 0 ? `${processingVideo.progress}%` : 'Aguardando...'}
+                      </p>
+                    </div>
+                  )}
                 </div>
 
                 {/* Player Controls */}
-                <div className="px-4 py-3 bg-[#262626] flex items-center gap-3">
-                  <button onClick={() => setPlaying(!playing)} className="text-white hover:text-[#7C3AED] transition-colors">
-                    {playing ? <Pause size={18} /> : <Play size={18} />}
-                  </button>
-                  <div className="flex-1 h-1 bg-[#333333] rounded-full cursor-pointer relative">
-                    <div className="absolute left-0 top-0 h-full bg-[#7C3AED] rounded-full" style={{ width: `${progress}%` }} />
-                  </div>
-                  <span className="text-xs text-[#71717A] font-mono">1:24 / 3:48</span>
-                  <Volume2 size={16} className="text-[#71717A]" />
-                  <Maximize size={16} className="text-[#71717A]" />
+                <div className="px-4 py-3 bg-[#262626] flex items-center justify-between">
+                  <span className="text-xs text-[#A1A1AA]">
+                    {completed ? 'Video processado' : processingVideo ? 'Original durante o processamento' : 'Previa do video'}
+                  </span>
+                  <span className="text-xs text-[#71717A] font-mono">
+                    {completed ? 'MP4 • 1080p' : processingVideo ? 'Original' : ''}
+                  </span>
                 </div>
 
                 {/* Download Area */}
@@ -668,6 +855,12 @@ export default function Editor() {
                         <Download size={16} /> Baixar Video Final
                       </a>
                       <button
+                        onClick={() => setShowScheduleModal(true)}
+                        className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-[#262626] border border-[#27272A] text-[#A1A1AA] rounded-lg text-sm hover:border-[rgba(124,58,237,0.4)] hover:text-white transition-colors"
+                      >
+                        <Calendar size={16} /> Agendar no calendario
+                      </button>
+                      <button
                         onClick={resetAll}
                         className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-[#262626] border border-[#27272A] text-[#A1A1AA] rounded-lg text-sm hover:border-[rgba(124,58,237,0.4)] transition-colors"
                       >
@@ -679,6 +872,24 @@ export default function Editor() {
               </div>
             </div>
           </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Schedule Modal */}
+      <AnimatePresence>
+        {showScheduleModal && (
+          <ScheduleModal
+            date={scheduleDate}
+            platform={schedulePlatform}
+            format={scheduleFormat}
+            scheduling={scheduling}
+            error={scheduleError}
+            onDateChange={setScheduleDate}
+            onPlatformChange={setSchedulePlatform}
+            onFormatChange={setScheduleFormat}
+            onClose={() => setShowScheduleModal(false)}
+            onConfirm={handleSchedule}
+          />
         )}
       </AnimatePresence>
 
